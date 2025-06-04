@@ -44,21 +44,26 @@ namespace AsyncAcademy.Pages
                 return Page();
             }
 
-            if (!Account.IsProfessor)  // Only for students -> We will create an entry in StudenyPayment table
+            // First add the user so EF Core assigns an Id which can be used as
+            // the foreign key for the initial payment record.
+            _context.Users.Add(Account);
+            await _context.SaveChangesAsync();
+
+            // After SaveChangesAsync the Account.Id property will be populated
+            // with the generated key. Only then create the initial Payment
+            // record for students.
+            if (!Account.IsProfessor)
             {
                 var newStudentPayment = new Payment
                 {
-                    UserId = Account.Id,    
-                    AmountPaid = 0,          // No classes signed up yet 
+                    UserId = Account.Id,
+                    AmountPaid = 0,          // No classes signed up yet
                     Timestamp = DateTime.Now
                 };
 
                 _context.Payments.Add(newStudentPayment);
                 await _context.SaveChangesAsync();
             }
-
-            _context.Users.Add(Account);
-            await _context.SaveChangesAsync();
 
             HttpContext.Session.SetInt32("CurrentUserId", Account.Id);
             return RedirectToPage("./welcome");
